@@ -38,7 +38,7 @@ class Installer(threading.Thread):
         self.sdcard = None
 
     def run(self):
-        GLib.idle_add(self.callback, 0, "Starting pmbootstrap")
+        GLib.idle_add(self.callback, 0, "Starting pmbootstrap", None)
         pmos.config(
             codename=self.codename,
             hostname=self.hostname,
@@ -47,13 +47,21 @@ class Installer(threading.Thread):
             ui=self.ui,
             user=self.user
         )
-        GLib.idle_add(self.callback, 0.1, "Building rootfs")
-        pmos.install(
-            password=self.password,
-            packages=self.packages,
-            sdcard=self.sdcard
-        )
-        GLib.idle_add(self.callback, 1, "Install complete!")
+
+        GLib.idle_add(self.callback, 0, "Cleaning chroots", None)
+        pmos.clean()
+
+        GLib.idle_add(self.callback, 0.1, "Building rootfs", None)
+        for update in pmos.install(
+                password=self.password,
+                packages=self.packages,
+                sdcard=self.sdcard
+        ):
+            sub_factor, status, log = update
+            factor = 0.1 + (sub_factor * 0.5)
+
+            GLib.idle_add(self.callback, factor, status, log)
+        GLib.idle_add(self.callback, 1, "Install complete!", None)
 
 
 class InstallerApplication(Gtk.Application):
@@ -117,6 +125,9 @@ class AppWindow:
         if isinstance(widget, Gtk.Container):
             widget.forall(self.apply_css, provider)
 
+    def on_main_window_destroy(self, widget, *args):
+        Gtk.main_quit()
+
     def populate_devices(self):
         for item in pmos.get_vendors():
             self.manufacturer.append_text(item)
@@ -179,9 +190,11 @@ class AppWindow:
         thread.sdcard = self.sdcard.get_active_text().split(" ")[0]
         thread.start()
 
-    def on_progress(self, value, status):
+    def on_progress(self, value, status, log):
         self.progress.set_fraction(value)
         self.progress.set_text(status)
+        if log:
+            self.log.set_text(self.log.get_text() + log)
 
 
 def main():

@@ -1,4 +1,6 @@
 import os
+import re
+
 import pmb
 import subprocess
 import logging
@@ -63,17 +65,34 @@ def get_device_info(codename):
 
 
 def _pmbootstrap(command, inputs=None):
-    p = subprocess.Popen(['pmbootstrap'] + command)
-    p.communicate(inputs)
+    regex = r"\*\*\* \((\d)/(\d)\) (.+) \*\*\*"
+
+    p = subprocess.Popen(['pmbootstrap', '--details-to-stdout'] + command, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, universal_newlines=True)
+    if inputs:
+        p.stdin.write(inputs)
+
+    progress = 0
+    status = ""
+    for line in iter(p.stdout.readline, ''):
+        m = re.search(regex, line)
+        if m:
+            a, b, status = m.groups()
+            progress = (int(a) / int(b))
+        yield progress, status, line
 
 
 def config(codename, hostname, ssh, timezone, ui, user):
-    _pmbootstrap(['config', 'device', codename])
-    _pmbootstrap(['config', 'hostname', hostname])
-    _pmbootstrap(['config', 'ssh_keys', str(ssh)])
-    _pmbootstrap(['config', 'timezone', timezone])
-    _pmbootstrap(['config', 'ui', ui])
-    _pmbootstrap(['config', 'user', user])
+    list(_pmbootstrap(['config', 'device', codename]))
+    list(_pmbootstrap(['config', 'hostname', hostname]))
+    list(_pmbootstrap(['config', 'ssh_keys', str(ssh)]))
+    list(_pmbootstrap(['config', 'timezone', timezone]))
+    list(_pmbootstrap(['config', 'ui', ui]))
+    list(_pmbootstrap(['config', 'user', user]))
+
+
+def clean():
+    list(_pmbootstrap(['-y', 'zap']))
 
 
 def install(password, packages=None, sdcard=None):
@@ -82,7 +101,7 @@ def install(password, packages=None, sdcard=None):
         command += ['--sdcard', '/dev/' + sdcard]
     if packages is not None and len(packages) > 0:
         command += ['--add', ','.join(packages)]
-    _pmbootstrap(command, inputs="{p}\n{p}\n".format(p=password))
+    yield from _pmbootstrap(command, inputs="{p}\n{p}\n".format(p=password))
 
 
 if __name__ == '__main__':
