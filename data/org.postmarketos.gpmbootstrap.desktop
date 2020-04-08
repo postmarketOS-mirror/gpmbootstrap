@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=postmarketOS installer
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=false
+Exec=gpmbootstrap
+Icon=org.postmarketos.gpmbootstrap
+Categories=GTK;GNOME;Utility
+X-DBUS-ServiceName=org.postmarketos.gpmbootstrap

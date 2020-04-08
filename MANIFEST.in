@@ -1,0 +1,3 @@
+include data/icon.svg
+include data/org.postmarketos.gpmbootstrap.desktop
+include gpmbootstrap/gpmbootstrap.gresource
