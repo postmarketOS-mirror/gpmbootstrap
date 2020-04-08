@@ -4,7 +4,7 @@ setup(
     name='gpmbootstrap',
     version='0.1.0',
     packages=['gpmbootstrap'],
-    url='https://gitlab.com/MartijnBraam/gpmbootstrap',
+    url='https://gitlab.com/pmbootstrap/gpmbootstrap',
     license='MIT',
     author='Martijn Braam',
     author_email='martijn@brixit.nl',
